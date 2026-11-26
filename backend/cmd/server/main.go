@@ -32,6 +32,7 @@ import (
 	"github.com/aryarifki/lazytrader/backend/internal/domains/terminal/foreign_flow_pro"
 	"github.com/aryarifki/lazytrader/backend/internal/domains/terminal/konglo"
 	"github.com/aryarifki/lazytrader/backend/internal/domains/terminal/market_report"
+	"github.com/aryarifki/lazytrader/backend/internal/domains/terminal/mmd"
 	"github.com/aryarifki/lazytrader/backend/internal/domains/terminal/portal"
 	"github.com/go-chi/chi/v5"
 	chimw "github.com/go-chi/chi/v5/middleware"
@@ -110,6 +111,7 @@ func main() {
 		tr.Mount("/portal", portal.Routes())
 		tr.Mount("/foreign-flow", foreign_flow_pro.Routes(dbPool, termCache))
 		tr.Mount("/konglo", konglo.Routes(dbPool, termCache))
+		tr.Mount("/mmd", mmd.Routes(dbPool, termCache))
 		tr.Mount("/market-report", market_report.Routes(market_report.Deps{
 			Guard:            guard,
 			TerminalAdminKey: cfg.TerminalAdminKey,
