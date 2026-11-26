@@ -15,6 +15,8 @@ const ForeignPage = lazy(() => import("@/features/foreign/ForeignPage"));
 const OwnershipPage = lazy(() => import("@/features/ownership/OwnershipPage"));
 const GroupPage = lazy(() => import("@/features/group/GroupPage"));
 const ExplorerPage = lazy(() => import("@/features/explorer/ExplorerPage"));
+const MmdPage = lazy(() => import("@/features/mmd/MmdPage"));
+const IpoHunterPage = lazy(() => import("@/features/ipo-hunter/IpoHunterPage"));
 
 const PROTECTED_PREFIXES = [
   "/signal",
@@ -96,8 +98,8 @@ export default function App() {
                 <Route path="/ownership" element={<OwnershipPage />} />
                 <Route path="/group" element={<GroupPage />} />
                 <Route path="/explorer" element={<ExplorerPage />} />
-                <Route path="/mmd" element={<FeaturePlaceholder title="MM Detector Pro" phase="Fase 4" />} />
-                <Route path="/ipo-hunter" element={<FeaturePlaceholder title="IPO Hunter Pro" phase="Fase 4" />} />
+                <Route path="/mmd" element={<MmdPage />} />
+                <Route path="/ipo-hunter" element={<IpoHunterPage />} />
                 <Route path="/foreign-pro" element={<FeaturePlaceholder title="Foreign Flow Pro" phase="Fase 4" />} />
                 <Route path="/konglo" element={<FeaturePlaceholder title="Konglo Screener" phase="Fase 4" />} />
                 <Route path="/:ticker" element={<TickerPage />} />
