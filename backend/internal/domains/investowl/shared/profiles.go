@@ -2,6 +2,7 @@ package shared
 
 import (
 	"math"
+	"strconv"
 	"strings"
 )
 
@@ -12,14 +13,21 @@ func NormalizeTicker(ticker string) string {
 	return strings.TrimSpace(s)
 }
 
-// Round performs IEEE-754 half-to-even rounding matching Python's round(x, decimals).
+// Round performs exact decimal half-to-even rounding matching CPython round(v, decimals).
 func Round(v float64, decimals int) float64 {
 	if math.IsNaN(v) || math.IsInf(v, 0) {
 		return 0
 	}
-	pow := math.Pow10(decimals)
-	res := math.RoundToEven(v*pow) / pow
-	if res == 0 {
+	if decimals < 0 {
+		pow := math.Pow10(-decimals)
+		res := math.RoundToEven(v/pow) * pow
+		if res == 0 {
+			return 0
+		}
+		return res
+	}
+	res, err := strconv.ParseFloat(strconv.FormatFloat(v, 'f', decimals, 64), 64)
+	if err != nil || res == 0 {
 		return 0
 	}
 	return res

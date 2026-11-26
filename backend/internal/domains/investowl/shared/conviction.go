@@ -132,7 +132,8 @@ func ConvictionScore(signal string, foreign5d *float64, scan []AlphaScanRow, tic
 	}
 	fScore := ForeignComponent(foreign5d, scale)
 	wScore, wNote := BrokerWinComponent(scan, ticker)
-	score := (pScore * 0.30) + (sScore * 0.30) + (fScore * 0.20) + (wScore * 0.20)
+	// Explicit float64() prevents ARM64 FMADD contraction so IEEE-754 intermediate rounding matches CPython.
+	score := float64(pScore*0.30) + float64(sScore*0.30) + float64(fScore*0.20) + float64(wScore*0.20)
 
 	return ConvictionOutput{
 		Score:              Round(score, 1),

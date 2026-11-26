@@ -75,7 +75,7 @@ func main() {
 	r.Use(middleware.SecurityHeaders)
 	r.Use(middleware.CORS(cfg.CORSOrigins))
 	r.Use(middleware.Gzip)
-	r.Use(middleware.RateLimit(invCache.Redis()))
+	r.Use(middleware.RateLimit(invCache.Redis(), cfg.RedisKeyPrefix))
 
 	// InvestOwl Core & Auth APIs
 	r.Get("/api/health", healthHandler.InvestowlHealth)

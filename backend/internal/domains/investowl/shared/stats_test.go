@@ -113,3 +113,30 @@ func TestCausalityBreakdownHelpers(t *testing.T) {
 		t.Fatalf("expected non-empty broker causality")
 	}
 }
+
+func TestRoundCPythonParity(t *testing.T) {
+	if got := Round(56.765, 2); got != 56.77 {
+		t.Fatalf("Round(56.765, 2) = %.15f, want 56.77", got)
+	}
+	if got := Round(45.65, 1); got != 45.6 {
+		t.Fatalf("Round(45.65, 1) = %.15f, want 45.6", got)
+	}
+	if got := Round(-0.0001, 2); got != 0 || math.Signbit(got) {
+		t.Fatalf("Round(-0.0001, 2) = %v, want +0", got)
+	}
+}
+
+func TestConvictionScoreNoFMADrift(t *testing.T) {
+	// Constructs pScore=25, sScore=50, fScore=35.75, wScore=80 -> exact 45.65 (CPython IEEE-754 -> 45.6).
+	f5 := 25_000_000_000.0 * math.Atanh(-0.285)
+	scan := []AlphaScanRow{
+		{Ticker: "INDF", BrokerCode: "ES", WinRate: 0.80, Significant: true, PValueOneSided: 0.01, MeanFwdReturn: 0.02},
+	}
+	out := ConvictionScore("Neutral", &f5, scan, "INDF", nil, nil, nil)
+	if out.ForeignComponent != 35.75 || out.BrokerComponent != 80.0 || out.CausalityComponent != 25.0 || out.SignalComponent != 50.0 {
+		t.Fatalf("unexpected components: %+v", out)
+	}
+	if out.Score != 45.6 {
+		t.Fatalf("ConvictionScore.Score = %.1f, want 45.6", out.Score)
+	}
+}

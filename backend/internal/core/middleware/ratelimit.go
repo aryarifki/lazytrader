@@ -42,7 +42,7 @@ func ExtractClientIP(r *http.Request) string {
 }
 
 // RateLimit mirrors InvestOwl's Redis fixed-window rate limiter (20/min auth, 80/min data).
-func RateLimit(rdb *redis.Client) func(http.Handler) http.Handler {
+func RateLimit(rdb *redis.Client, keyPrefix string) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if rdb == nil {
@@ -66,7 +66,7 @@ func RateLimit(rdb *redis.Client) func(http.Handler) http.Handler {
 			}
 			if limit > 0 {
 				ip := ExtractClientIP(r)
-				key := fmt.Sprintf("rate_limit:%s:%s", group, ip)
+				key := fmt.Sprintf("%srate_limit:%s:%s", keyPrefix, group, ip)
 				if count, err := rdb.Incr(r.Context(), key).Result(); err == nil {
 					if count == 1 {
 						_ = rdb.Expire(r.Context(), key, time.Minute).Err()
