@@ -30,6 +30,7 @@ import (
 	"github.com/aryarifki/lazytrader/backend/internal/domains/investowl/system"
 	"github.com/aryarifki/lazytrader/backend/internal/domains/investowl/users"
 	"github.com/aryarifki/lazytrader/backend/internal/domains/terminal/foreign_flow_pro"
+	ipohunter "github.com/aryarifki/lazytrader/backend/internal/domains/terminal/ipo_hunter"
 	"github.com/aryarifki/lazytrader/backend/internal/domains/terminal/konglo"
 	"github.com/aryarifki/lazytrader/backend/internal/domains/terminal/market_report"
 	"github.com/aryarifki/lazytrader/backend/internal/domains/terminal/mmd"
@@ -111,6 +112,7 @@ func main() {
 		tr.Mount("/portal", portal.Routes())
 		tr.Mount("/foreign-flow", foreign_flow_pro.Routes(dbPool, termCache))
 		tr.Mount("/konglo", konglo.Routes(dbPool, termCache))
+		tr.Mount("/ipo-hunter", ipohunter.Routes(dbPool, termCache))
 		tr.Mount("/mmd", mmd.Routes(dbPool, termCache))
 		tr.Mount("/market-report", market_report.Routes(market_report.Deps{
 			Guard:            guard,
