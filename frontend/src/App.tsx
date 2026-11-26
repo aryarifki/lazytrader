@@ -8,6 +8,9 @@ import FeaturePlaceholder from "@/components/ui/FeaturePlaceholder";
 const LoginPage = lazy(() => import("@/features/auth/LoginPage"));
 const PendingPage = lazy(() => import("@/features/auth/PendingPage"));
 const AdminPage = lazy(() => import("@/features/admin/AdminPage"));
+const HomePage = lazy(() => import("@/features/home/HomePage"));
+const TickerPage = lazy(() => import("@/features/ticker/TickerPage"));
+const SignalPage = lazy(() => import("@/features/signal/SignalPage"));
 
 const PROTECTED_PREFIXES = [
   "/signal",
@@ -78,12 +81,12 @@ export default function App() {
           <Suspense fallback={<PageLoader />}>
             <RouteGuard>
               <Routes>
-                <Route path="/" element={<FeaturePlaceholder title="Home — InvestOwl Dashboard" phase="Fase 4" />} />
+                <Route path="/" element={<HomePage />} />
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/pending" element={<PendingPage />} />
                 <Route path="/admin" element={<AdminPage />} />
                 <Route path="/admin/market-report" element={<FeaturePlaceholder title="Market Report Generator Admin" phase="Fase 4" />} />
-                <Route path="/signal" element={<FeaturePlaceholder title="AI Signal & Backtest" phase="Fase 4" />} />
+                <Route path="/signal" element={<SignalPage />} />
                 <Route path="/backtest" element={<Navigate to="/signal?tab=backtest" replace />} />
                 <Route path="/foreign" element={<FeaturePlaceholder title="Foreign Flow & Sector Rotation" phase="Fase 4" />} />
                 <Route path="/ownership" element={<FeaturePlaceholder title="Ownership Intelligence" phase="Fase 4" />} />
@@ -93,7 +96,7 @@ export default function App() {
                 <Route path="/ipo-hunter" element={<FeaturePlaceholder title="IPO Hunter Pro" phase="Fase 4" />} />
                 <Route path="/foreign-pro" element={<FeaturePlaceholder title="Foreign Flow Pro" phase="Fase 4" />} />
                 <Route path="/konglo" element={<FeaturePlaceholder title="Konglo Screener" phase="Fase 4" />} />
-                <Route path="/:ticker" element={<FeaturePlaceholder title="Detail Saham & Bandarmologi" phase="Fase 4" />} />
+                <Route path="/:ticker" element={<TickerPage />} />
               </Routes>
             </RouteGuard>
           </Suspense>

@@ -13,7 +13,7 @@
 | **1** | Inisialisasi Repo `/root/lazytrader`, struktur modular, & dokumentasi kanonial `docs/` | ✅ **DONE** | Commit `f1b0cfa` |
 | **2** | Core Platform Go (`config`, `database`, `cache`, `flags`, `auth`, `middleware`, `spa`) + `health`/`users`/`portal` + Vite React 19 Shell + Parity Harness | ✅ **DONE** | 7/7 Go unit tests PASS; `/api/health` & `/api/users/settings/auth-gate` 100% parity vs `:8001`; `VmRSS` terukur **16,5 MB** |
 | **3** | Migrasi Backend Domain (11 domain InvestOwl + 5 domain Avenium) + Golden JSON Parity | ✅ **DONE** | **`11/11` router InvestOwl + `5/5` domain Avenium (`26` endpoint) + `health` + `portal` 100% DONE!** (`915a292`..`3a3d7d9` + Wave 3E-3); **108/108** InvestOwl + **85/85** Terminal parity PASS (`:8001` / `:8091`, zero fails); Canary `0/1032` mismatch; `VmRSS` Wave 3E-3 **31.540 kB** (`~30,8 MB`, `VmHWM` 33.200 kB) vs legacy `avenium-backend` ~357 MB |
-| **4** | Migrasi Frontend Features (seluruh halaman InvestOwl + 5 modul Avenium dipecah modular & MD3 restyle) | ⬜ **TODO** | — |
+| **4** | Migrasi Frontend Features (seluruh halaman InvestOwl + 5 modul Avenium dipecah modular & MD3 restyle) | 🟡 **IN PROGRESS (Wave 4A Done)** | Wave 4A (`shared`, `home`, `ticker`, `signal`, `App.tsx` routing): `tsc --noEmit` PASS, zero Next.js/BEI1%, `vite build` 10.30s via `mem-guard`, SPA + 12/12 API smoke PASS (`VmRSS` 48.944 kB / ~47,8 MB) |
 | **5** | Verifikasi Paritas Total (`45/45` Canary, unit/e2e test, benchmark RAM & disk) | ⬜ **TODO** | — |
 | **6** | Deployment & Cutover Cloudflared *(menunggu persetujuan owner)* | ⬜ **TODO** | — |
 
@@ -42,5 +42,6 @@
 | :--- | :--- | :---: | :--- |
 | Shell Layout (`ClientLayout`, `Sidebar`, `BottomNav`, `TerminalDropdown`, `ThemeToggle`, `RefreshButton`, `LogoutButton`) | InvestOwl + Dropdown Terminal | ✅ DONE | 100% MD3 InvestOwl + `vite build` 4.71s |
 | `features/auth/` (`LoginPage`, `PendingPage`) & `features/admin/` (`AdminPage`) | InvestOwl | ✅ DONE | `tsc --noEmit` PASS |
-| `features/home/`, `ticker/`, `signal/`, `foreign/`, `ownership/`, `group/`, `explorer/` | InvestOwl | ⬜ TODO | Fase 4 |
-| `features/mmd/`, `ipo-hunter/`, `foreign-pro/`, `konglo/`, `market-report/` | Avenium (pecah modular + MD3) | ⬜ TODO | Fase 4 |
+| Shared (`TickerSearch`, `InvestOwlLoader`, `useForeignFlow`) + `features/home/`, `ticker/`, `signal/` (Wave 4A) | InvestOwl (`/`, `/:ticker`, `/signal`, `/backtest`) | ✅ DONE | 31 file modular + routing di `App.tsx`; `tsc --noEmit` + `vite build` 10.30s (`mem-guard`); SPA (`/` `/BBCA` `/signal` `/backtest` + JS bundle) & 12/12 API smoke HTTP 200 PASS; `VmRSS` 48.944 kB (~47,8 MB) |
+| `features/foreign/`, `ownership/`, `group/`, `explorer/` (Wave 4B) | InvestOwl | ⬜ TODO | Fase 4 berikutnya |
+| `features/mmd/`, `ipo-hunter/`, `foreign-pro/`, `konglo/`, `market-report/` (Waves 4C–4D) | Avenium (pecah modular + MD3) | ⬜ TODO | Fase 4 berikutnya |

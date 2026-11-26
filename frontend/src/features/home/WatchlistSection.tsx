@@ -1,0 +1,295 @@
+import { useEffect, useMemo, useState } from "react";
+import useSWR from "swr";
+import { Icon } from "@iconify/react";
+import { useSession } from "@/lib/auth";
+import { useAppStore } from "@/store/useAppStore";
+import TickerCard from "./TickerCard";
+import type { WatchlistDetailResponse } from "./types";
+
+const fetcher = (u: string) => fetch(u, { credentials: "include" }).then((r) => r.json());
+const LS_PRIMARY = "investowl_watchlist";
+const LS_FALLBACK = "tradepulse_watchlist";
+
+function WatchlistCardFetcher({
+  ticker,
+  onRemove,
+}: {
+  ticker: string;
+  onRemove?: (t: string) => void;
+}) {
+  const { data, isLoading, error } = useSWR<WatchlistDetailResponse>(
+    `/api/bandar/detail/${ticker}?window_days=20`,
+    fetcher,
+    { revalidateOnFocus: false, dedupingInterval: 60000 }
+  );
+
+  if (isLoading) {
+    return (
+      <div className="bg-[var(--md-sys-color-surface-container)] border border-[var(--md-sys-color-outline-variant)]/60 rounded-2xl p-4 h-[104px] flex flex-col justify-between animate-pulse shadow-2xs">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <div className="w-14 h-5 bg-[var(--md-sys-color-surface-container-highest)] rounded-md"></div>
+            <div className="w-20 h-4 bg-[var(--md-sys-color-surface-container-highest)] rounded-md"></div>
+          </div>
+          <div className="w-16 h-6 bg-[var(--md-sys-color-surface-container-highest)] rounded-md"></div>
+        </div>
+        <div className="grid grid-cols-3 gap-2 border-t border-[var(--md-sys-color-outline-variant)]/50 pt-3">
+          <div className="w-12 h-3.5 bg-[var(--md-sys-color-surface-container-highest)] rounded"></div>
+          <div className="w-14 h-3.5 bg-[var(--md-sys-color-surface-container-highest)] rounded mx-auto"></div>
+          <div className="w-14 h-3.5 bg-[var(--md-sys-color-surface-container-highest)] rounded ml-auto"></div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || data?.error || !data) return null;
+
+  const item = {
+    ticker: data.ticker,
+    signal: data.signal_raw || data.signal,
+    close: data.close,
+    ret_5d: data.ret_5d,
+    foreign_net_5d: data.foreign_5d,
+    spark: data.price_chart?.slice(-20).map((d) => d.close) || [],
+  };
+
+  return <TickerCard item={item} onRemove={onRemove} />;
+}
+
+export default function WatchlistSection() {
+  const { data: session } = useSession();
+  const { localWatchlist, setLocalWatchlist } = useAppStore();
+  const [myList, setMyList] = useState<string[]>([]);
+  const [loaded, setLoaded] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [query, setQuery] = useState("");
+
+  useEffect(() => {
+    let initialList = ["BBCA", "BMRI", "ASII", "TLKM"];
+    try {
+      const saved = localStorage.getItem(LS_PRIMARY) || localStorage.getItem(LS_FALLBACK);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          initialList = parsed;
+        }
+      } else if (localWatchlist && localWatchlist.length > 0) {
+        initialList = localWatchlist;
+      }
+    } catch {
+      // Ignore JSON parse error
+    }
+
+    const userEmail = session?.user?.email;
+    if (userEmail) {
+      fetch(`/api/users/${encodeURIComponent(userEmail)}/watchlist`, { credentials: "include" })
+        .then((res) => res.json())
+        .then((data) => {
+          if (Array.isArray(data?.watchlist) && data.watchlist.length > 0) {
+            setMyList(data.watchlist);
+            setLocalWatchlist(data.watchlist);
+            try {
+              localStorage.setItem(LS_PRIMARY, JSON.stringify(data.watchlist));
+              localStorage.setItem(LS_FALLBACK, JSON.stringify(data.watchlist));
+            } catch {}
+          } else {
+            fetch(`/api/users/${encodeURIComponent(userEmail)}/watchlist`, {
+              method: "PUT",
+              credentials: "include",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ watchlist: initialList }),
+            }).catch(() => {});
+            setMyList(initialList);
+            setLocalWatchlist(initialList);
+          }
+          setLoaded(true);
+        })
+        .catch(() => {
+          setMyList(initialList);
+          setLocalWatchlist(initialList);
+          setLoaded(true);
+        });
+    } else {
+      setMyList(initialList);
+      setLocalWatchlist(initialList);
+      setLoaded(true);
+    }
+  }, [setLocalWatchlist, session?.user?.email]);
+
+  const { data: universeData } = useSWR<{ tickers?: string[] }>("/api/bandar/universe/all", fetcher, {
+    revalidateOnFocus: false,
+  });
+  const allTickers = useMemo(() => universeData?.tickers || [], [universeData?.tickers]);
+
+  function saveList(list: string[]) {
+    setMyList(list);
+    setLocalWatchlist(list);
+    try {
+      localStorage.setItem(LS_PRIMARY, JSON.stringify(list));
+      localStorage.setItem(LS_FALLBACK, JSON.stringify(list));
+    } catch {
+      // Ignore storage errors
+    }
+    const userEmail = session?.user?.email;
+    if (userEmail) {
+      fetch(`/api/users/${encodeURIComponent(userEmail)}/watchlist`, {
+        method: "PUT",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ watchlist: list }),
+      }).catch((e) => console.error("Gagal sinkronisasi watchlist:", e));
+    }
+  }
+
+  function addTicker(ticker: string) {
+    const t = ticker.trim().toUpperCase();
+    if (t && !myList.includes(t)) {
+      saveList([...myList, t]);
+    }
+    setQuery("");
+  }
+
+  function removeTicker(ticker: string) {
+    saveList(myList.filter((t) => t !== ticker));
+  }
+
+  const searchResults = useMemo(() => {
+    if (!query) return [];
+    const q = query.toUpperCase();
+    return allTickers.filter((t: string) => t.includes(q)).slice(0, 10);
+  }, [query, allTickers]);
+
+  return (
+    <section className="space-y-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[var(--md-sys-color-outline-variant)]/50 pb-3">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-lg bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-primary-container)] flex items-center justify-center">
+            <Icon icon="ph:chart-polar-duotone" width="18" />
+          </div>
+          <div>
+            <h2 className="text-base sm:text-lg font-extrabold text-[var(--md-sys-color-on-surface)] tracking-tight">
+              Portfolio Watchlist
+            </h2>
+            <p className="text-[11px] text-[var(--md-sys-color-on-surface-variant)]">
+              Pantauan akumulasi bandar &amp; net flow asing 5 hari bursa
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setEditing(!editing)}
+            className={`flex items-center gap-1.5 text-xs font-semibold px-4 py-1.5 rounded-full border transition-all cursor-pointer ${
+              editing
+                ? "bg-[var(--md-sys-color-primary)] text-[var(--md-sys-color-on-primary)] border-[var(--md-sys-color-primary)] shadow-sm"
+                : "bg-[var(--md-sys-color-surface-container)] text-[var(--md-sys-color-on-surface)] border-[var(--md-sys-color-outline-variant)]/60 hover:bg-[var(--md-sys-color-surface-container-high)]"
+            }`}
+          >
+            <Icon icon={editing ? "ph:check-bold" : "ph:pencil-simple-duotone"} width="14" />
+            <span>{editing ? "Selesai" : "Edit Pantauan"}</span>
+          </button>
+        </div>
+      </div>
+
+      {editing && (
+        <div className="bg-[var(--md-sys-color-surface-container)] border border-[var(--md-sys-color-outline-variant)]/60 rounded-2xl p-4 sm:p-5 space-y-3 shadow-xs transition-all">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-[var(--md-sys-color-on-surface)]">
+              Tambah Emiten Baru ke Watchlist
+            </span>
+            <span className="text-[11px] text-[var(--md-sys-color-on-surface-variant)]">
+              Ketik kode ticker (contoh: BBRI, ASII, BREN)
+            </span>
+          </div>
+
+          <div className="relative">
+            <Icon
+              icon="ph:magnifying-glass-duotone"
+              className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--md-sys-color-on-surface-variant)]"
+              width="18"
+            />
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Cari kode saham..."
+              className="w-full bg-[var(--md-sys-color-surface-container-low)] border border-[var(--md-sys-color-outline-variant)]/60 focus:border-[var(--md-sys-color-primary)] rounded-xl pl-10 pr-4 py-2.5 text-xs font-mono font-bold text-[var(--md-sys-color-on-surface)] outline-none uppercase placeholder:normal-case placeholder:font-normal transition-colors"
+              autoFocus
+            />
+          </div>
+
+          {query && (
+            <div className="flex flex-wrap gap-2 pt-1">
+              {searchResults.map((t: string) => {
+                const added = myList.includes(t);
+                return (
+                  <button
+                    key={t}
+                    type="button"
+                    onClick={() => addTicker(t)}
+                    disabled={added}
+                    className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border font-mono font-medium transition-all cursor-pointer ${
+                      added
+                        ? "bg-[var(--md-sys-color-surface-container-highest)] text-[var(--md-sys-color-on-surface-variant)] opacity-50 cursor-not-allowed border-[var(--md-sys-color-outline-variant)]/40"
+                        : "bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface)] border-[var(--md-sys-color-outline-variant)]/60 hover:border-[var(--md-sys-color-primary)] hover:text-[var(--md-sys-color-primary)]"
+                    }`}
+                  >
+                    <Icon icon={added ? "ph:check-bold" : "ph:plus-bold"} width="12" />
+                    <span>{t}</span>
+                  </button>
+                );
+              })}
+              {searchResults.length === 0 && (
+                <span className="text-xs text-[var(--md-sys-color-on-surface-variant)] italic px-2">
+                  Ticker tidak ditemukan di universe.
+                </span>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        {!loaded
+          ? Array.from({ length: 4 }).map((_, i) => (
+              <div
+                key={i}
+                className="bg-[var(--md-sys-color-surface-container)] border border-[var(--md-sys-color-outline-variant)]/60 rounded-2xl p-4 h-[104px] flex flex-col justify-between animate-pulse shadow-2xs"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="w-14 h-5 bg-[var(--md-sys-color-surface-container-highest)] rounded-md"></div>
+                  <div className="w-16 h-6 bg-[var(--md-sys-color-surface-container-highest)] rounded-md"></div>
+                </div>
+                <div className="grid grid-cols-3 gap-2 border-t border-[var(--md-sys-color-outline-variant)]/50 pt-3">
+                  <div className="w-10 h-3 bg-[var(--md-sys-color-surface-container-highest)] rounded"></div>
+                  <div className="w-10 h-3 bg-[var(--md-sys-color-surface-container-highest)] rounded mx-auto"></div>
+                  <div className="w-10 h-3 bg-[var(--md-sys-color-surface-container-highest)] rounded ml-auto"></div>
+                </div>
+              </div>
+            ))
+          : myList.map((ticker) => (
+              <WatchlistCardFetcher key={ticker} ticker={ticker} onRemove={editing ? removeTicker : undefined} />
+            ))}
+      </div>
+
+      {loaded && myList.length === 0 && (
+        <div className="py-16 flex flex-col items-center justify-center text-center bg-[var(--md-sys-color-surface-container)] border border-[var(--md-sys-color-outline-variant)]/60 rounded-3xl shadow-xs">
+          <Icon icon="ph:binocular-duotone" width="48" className="mb-3 text-[var(--md-sys-color-primary)] opacity-80" />
+          <p className="text-sm font-bold text-[var(--md-sys-color-on-surface)]">
+            Watchlist pantauan Anda masih kosong.
+          </p>
+          <p className="text-xs text-[var(--md-sys-color-on-surface-variant)] mt-1">
+            Klik &quot;Edit Pantauan&quot; di atas untuk menambahkan saham favorit Anda.
+          </p>
+          <button
+            type="button"
+            onClick={() => setEditing(true)}
+            className="mt-4 px-5 py-2 bg-[var(--md-sys-color-primary)] text-[var(--md-sys-color-on-primary)] rounded-full text-xs font-semibold transition-all hover:opacity-90 shadow-sm cursor-pointer"
+          >
+            Tambah Emiten
+          </button>
+        </div>
+      )}
+    </section>
+  );
+}
