@@ -83,3 +83,33 @@ func TestGrangerAndStatsHelpers(t *testing.T) {
 		t.Fatalf("invalid NeweyWestSE: %v", se)
 	}
 }
+
+func TestCausalityBreakdownHelpers(t *testing.T) {
+	rng := rand.New(rand.NewPCG(99, 13))
+	n := 50
+	prices := make([]PriceInput, n)
+	acts := make([]ParticipantActivityInput, 0, n*2)
+	px := 1000.0
+	prevFlow := 0.0
+	for i := 0; i < n; i++ {
+		d := string(rune('A'+i/26)) + string(rune('A'+i%26))
+		if i > 0 {
+			px = px * (1.0 + 0.015*prevFlow + 0.005*rng.NormFloat64())
+		}
+		prices[i] = PriceInput{Date: d, Ticker: "TEST", Close: px}
+		f := rng.NormFloat64()
+		prevFlow = f
+		acts = append(acts,
+			ParticipantActivityInput{Date: d, ParticipantType: "Asing", BrokerCode: "AK", NetValue: f * 1e9},
+			ParticipantActivityInput{Date: d, ParticipantType: "Lokal", BrokerCode: "YP", NetValue: -f * 0.2 * 1e9},
+		)
+	}
+	parts := CausalityByParticipant(prices, acts, 3, 250)
+	if len(parts) == 0 {
+		t.Fatalf("expected non-empty participant causality")
+	}
+	brks := CausalityByBroker(prices, acts, 5, 3, 250)
+	if len(brks) == 0 {
+		t.Fatalf("expected non-empty broker causality")
+	}
+}

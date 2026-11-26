@@ -14,7 +14,7 @@ import urllib.request
 from typing import Any
 
 
-def fetch_json(url: str, timeout: float = 10.0) -> tuple[int, Any]:
+def fetch_json(url: str, timeout: float = 30.0) -> tuple[int, Any]:
     req = urllib.request.Request(url, headers={"Accept": "application/json"})
     try:
         with urllib.request.urlopen(req, timeout=timeout) as resp:

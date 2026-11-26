@@ -17,6 +17,7 @@ import (
 	"github.com/aryarifki/lazytrader/backend/internal/core/flags"
 	"github.com/aryarifki/lazytrader/backend/internal/core/middleware"
 	"github.com/aryarifki/lazytrader/backend/internal/core/spa"
+	"github.com/aryarifki/lazytrader/backend/internal/domains/investowl/bandarmology"
 	"github.com/aryarifki/lazytrader/backend/internal/domains/investowl/broker"
 	"github.com/aryarifki/lazytrader/backend/internal/domains/investowl/foreign_flow"
 	"github.com/aryarifki/lazytrader/backend/internal/domains/investowl/forensic"
@@ -77,6 +78,12 @@ func main() {
 	r.Mount("/api/forensic", forensic.Routes(forensicSvc))
 	r.Mount("/api/foreign-flow", foreign_flow.Routes(dbPool, invCache, forensicSvc))
 	r.Mount("/api/signal", signalsvc.Routes(dbPool, invCache, flagStore))
+	r.Mount("/api/bandar", bandarmology.Routes(bandarmology.Deps{
+		DB:       dbPool,
+		Cache:    invCache,
+		Guard:    guard,
+		CFZoneID: cfg.CloudflareZoneID,
+	}))
 	r.Mount("/api/logs", system.Routes(system.Deps{
 		DB:           dbPool,
 		Cache:        invCache,

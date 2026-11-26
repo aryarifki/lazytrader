@@ -142,15 +142,36 @@ func GetUniverse(ctx context.Context, db *pgxpool.Pool, mode string, customList 
 	}
 }
 
-// GetDynamicUniverse mirrors bandarmology_service.py get_dynamic_universe with safe fallbacks.
+var hardcodedIndices = map[string][]string{
+	"idx_bumn":          {"ADHI", "ANTM", "BBNI", "BBRI", "BBTN", "BMRI", "BRIS", "ELSA", "JSMR", "MTEL", "PGAS", "PGEO", "PTBA", "PTPP", "SMGR", "TINS", "TLKM", "WIKA", "WSKT"},
+	"idx_high_dividend": {"ADRO", "AMRT", "ANTM", "ASII", "BBNI", "BBRI", "BBCA", "BMRI", "BNGA", "BRPT", "EXCL", "HEXA", "HMSP", "INDF", "ITMG", "KLBF", "PTBA", "TLKM", "UNTR"},
+	"esg_kehati":        {"AALI", "ADHI", "ASII", "BBCA", "BBNI", "BBRI", "BBTN", "BMRI", "BSDE", "INDF", "JSMR", "KLBF", "PGAS", "PTBA", "SMGR", "TLKM", "UNTR", "UNVR", "WIKA"},
+	"bisnis-27":         {"ADRO", "AKRA", "AMRT", "ANTM", "ASII", "BBCA", "BBNI", "BBRI", "BMRI", "BRPT", "CPIN", "CTRA", "EXCL", "INKP", "ITMG", "JSMR", "KLBF", "MAPI", "MIKA", "PGAS", "PTBA", "SMGR", "TLKM", "TOWR", "UNTR"},
+	"idx_smc":           {"ABMM", "ACES", "AGII", "AKRA", "AMFG", "ARNA", "ASSA", "AUTO", "BIRD", "BNGA", "BSDE", "CLEO", "CTRA", "DRMA", "DSNG", "ELSA", "ENRG", "ESSA", "HEAL", "HRUM", "IMAS", "INDY", "JPFA", "KEEN", "LSIP", "MARK", "MBAP", "MCOL", "MEDC", "MIKA", "MYOR", "NISP", "PANR", "PNLF", "PTRO", "RAJA", "SGER", "SIDO", "SMSM", "SSIA", "TAPG", "TOTL"},
+	"idxenergy":         {"ADMR", "ADRO", "AKRA", "APEX", "BIPI", "BUMI", "BYAN", "CUAN", "DEWA", "DOID", "DSSA", "ELSA", "ENRG", "ESSA", "GEMS", "GTBO", "HRUM", "INDY", "ITMG", "KKGI", "KOPI", "MBAP", "MCOL", "MEDC", "PGAS", "PGEO", "PTBA", "PTRO", "RAJA", "RMKE", "SGER", "SMMT", "TEBE", "TOBA", "WINS"},
+	"idxtechno":         {"AWAN", "BELI", "BUKA", "DCII", "DIVA", "EDGE", "ELIT", "EMTK", "GOTO", "KCI", "KIOS", "LUCK", "MCAS", "MLPT", "MTDL", "NFCX", "PTSN", "TECH", "TFAS", "WIFI", "ZATA"},
+	"idxfinance":        {"ADMF", "AGRO", "AMOR", "ARTO", "BBCA", "BBHI", "BBKP", "BBNI", "BBRI", "BBTN", "BDMN", "BFIN", "BJBR", "BJTM", "BMRI", "BNBA", "BNGA", "BNII", "BNLI", "BRIS", "BTPN", "CFIN", "MEGA", "NISP", "NOBU", "PNBN", "PNBS", "PNLF", "POLA", "SDRA"},
+	"idxhealth":         {"CARE", "DGNS", "HEAL", "IRRA", "KAEF", "KLBF", "MIKA", "OMNI", "PEHA", "PRDA", "RSGK", "SAME", "SIDO", "SILO", "SOHO"},
+	"idxpropert":        {"APLN", "ASRI", "BAPA", "BEST", "BKSL", "BSDE", "CITY", "CTRA", "DILD", "DMAS", "DUTI", "GWNG", "KIJA", "LPCK", "LPKR", "MDLN", "MTLA", "PWON", "SMRA", "SSIA"},
+	"idxinfra":          {"ADHI", "BALI", "BICC", "CASS", "CMNP", "EXCL", "FREN", "ISAT", "JSMR", "KEEN", "META", "MTEL", "PGAS", "PORT", "PTPP", "TBAL", "TBIG", "TLKM", "TOWR", "WIKA", "WSKT"},
+	"idxindust":         {"ASII", "AUTO", "BIMA", "BMSR", "BUDI", "HEXA", "IMAS", "KBLI", "KOBX", "LION", "MARK", "SCCO", "SMSM", "UNTR"},
+	"idxbasic":          {"ADMG", "AGII", "AMMN", "ANTM", "ARCI", "AVIA", "BRMS", "BRPT", "CPIN", "ESSA", "FASW", "INCO", "INKP", "INTP", "JPFA", "LTLS", "MDKA", "NCKL", "SMCB", "SMGR", "TPIA"},
+	"idxcyclic":         {"ACES", "AMRT", "AUTO", "CSAP", "ERAA", "LPPF", "MAPI", "MAPA", "MSKY", "RALS"},
+	"idxnoncyc":         {"AALI", "CINT", "CLEO", "CMRY", "CPIN", "DSNG", "GGRM", "HMSP", "ICBP", "INDF", "JPFA", "KINO", "LSIP", "MAIN", "MYOR", "ROTI", "SSMS", "STTP", "TBLA", "ULTJ", "UNVR"},
+	"idxtrans":          {"ASSA", "BIRD", "BPTR", "CASS", "CMPP", "GIAA", "HAIS", "HITS", "IPCC", "KJEN", "NELY", "PORT", "PSSI", "SAPX", "TMAS", "TRUK"},
+}
+
+// GetDynamicUniverse mirrors bandarmology.py get_dynamic_universe with hardcoded indices and fallbacks.
 func GetDynamicUniverse(ctx context.Context, db *pgxpool.Pool, mode string) []string {
-	if tickers, err := GetUniverse(ctx, db, mode, nil); err == nil && len(tickers) > 0 {
-		return tickers
+	m := strings.ToLower(strings.TrimSpace(mode))
+	switch m {
+	case "watchlist", "idx30", "lq45", "idx80", "all", "liquid":
+		if tickers, err := GetUniverse(ctx, db, m, nil); err == nil && len(tickers) > 0 {
+			return tickers
+		}
 	}
-	switch strings.ToLower(strings.TrimSpace(mode)) {
-	case "idx30", "watchlist":
-		return []string{"BBCA", "BBRI", "BMRI", "BBNI", "ASII", "TLKM", "AMMN", "BREN", "ADRO", "ICBP"}
-	default:
-		return []string{"BBCA", "BBRI", "BMRI", "BBNI", "ASII", "TLKM"}
+	if list, ok := hardcodedIndices[m]; ok {
+		return uniqueSorted(list)
 	}
+	return []string{"ANTM", "BBCA", "BBRI", "BMRI", "GOTO", "TLKM"}
 }
