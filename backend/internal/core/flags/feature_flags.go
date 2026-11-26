@@ -90,10 +90,31 @@ func (s *Store) Get(key string) (Value, bool) {
 	if env := strings.TrimSpace(os.Getenv("FLAG_" + key)); env != "" {
 		return Value{Raw: env}, true
 	}
+	if s == nil {
+		return Value{}, false
+	}
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	v, ok := s.flags[key]
 	return v, ok
+}
+
+// GetBool returns a boolean feature flag or fallback if unset.
+func (s *Store) GetBool(key string, fallback bool) bool {
+	v, ok := s.Get(key)
+	if !ok {
+		return fallback
+	}
+	return v.AsBool()
+}
+
+// GetString returns a trimmed string feature flag or fallback if unset/empty.
+func (s *Store) GetString(key, fallback string) string {
+	v, ok := s.Get(key)
+	if !ok || strings.TrimSpace(v.Raw) == "" {
+		return fallback
+	}
+	return strings.TrimSpace(v.Raw)
 }
 
 // All returns a copy of all loaded flags.

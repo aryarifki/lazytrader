@@ -17,7 +17,10 @@ import (
 	"github.com/aryarifki/lazytrader/backend/internal/core/flags"
 	"github.com/aryarifki/lazytrader/backend/internal/core/middleware"
 	"github.com/aryarifki/lazytrader/backend/internal/core/spa"
+	"github.com/aryarifki/lazytrader/backend/internal/domains/investowl/broker"
 	"github.com/aryarifki/lazytrader/backend/internal/domains/investowl/health"
+	"github.com/aryarifki/lazytrader/backend/internal/domains/investowl/stocks"
+	"github.com/aryarifki/lazytrader/backend/internal/domains/investowl/system"
 	"github.com/aryarifki/lazytrader/backend/internal/domains/investowl/users"
 	"github.com/aryarifki/lazytrader/backend/internal/domains/terminal/portal"
 	"github.com/go-chi/chi/v5"
@@ -37,9 +40,9 @@ func main() {
 	}
 	defer dbPool.Close()
 
-	invCache := cache.NewStore(cfg.RedisHost, cfg.RedisPort, cfg.RedisDBInvestowl, 256)
+	invCache := cache.NewStoreWithPrefix(cfg.RedisHost, cfg.RedisPort, cfg.RedisDBInvestowl, 256, cfg.RedisKeyPrefix)
 	defer invCache.Close()
-	termCache := cache.NewStore(cfg.RedisHost, cfg.RedisPort, cfg.RedisDBTerminal, 256)
+	termCache := cache.NewStoreWithPrefix(cfg.RedisHost, cfg.RedisPort, cfg.RedisDBTerminal, 256, cfg.RedisKeyPrefix)
 	defer termCache.Close()
 
 	_ = flags.NewStore(cfg.FeatureFlagsPath)
@@ -61,6 +64,17 @@ func main() {
 	r.Get("/api/health", healthHandler.InvestowlHealth)
 	r.Mount("/api/auth", oauthHandler.Routes())
 	r.Mount("/api/users", users.Routes(usersHandler, guard))
+	r.Mount("/api/stocks", stocks.Routes(dbPool))
+	r.Mount("/api/broker-flow", broker.Routes(dbPool))
+	r.Mount("/api/logs", system.Routes(system.Deps{
+		DB:           dbPool,
+		Cache:        invCache,
+		Guard:        guard,
+		SMtrackerDir: cfg.SMtrackerDir,
+		Host:         cfg.Host,
+		Port:         cfg.Port,
+		CFZoneID:     cfg.CloudflareZoneID,
+	}))
 
 	// Avenium Terminal APIs (no bei1persen)
 	r.Route("/api/v1/terminal", func(tr chi.Router) {

@@ -19,6 +19,7 @@ type Config struct {
 	RedisPort          int
 	RedisDBInvestowl   int
 	RedisDBTerminal    int
+	RedisKeyPrefix     string
 	CORSOrigins        []string
 	AuthSecret         string
 	GoogleClientID     string
@@ -28,6 +29,8 @@ type Config struct {
 	TerminalAdminKey   string
 	FeatureFlagsPath   string
 	SMtrackerDir       string
+	CloudflareAPIToken string
+	CloudflareZoneID   string
 }
 
 // Load reads optional .env files and environment variables with safe defaults.
@@ -50,6 +53,7 @@ func Load() (*Config, error) {
 		RedisPort:          getEnvInt("REDIS_PORT", 6379),
 		RedisDBInvestowl:   getEnvInt("REDIS_DB_INVESTOWL", 0),
 		RedisDBTerminal:    getEnvInt("REDIS_DB_TERMINAL", 1),
+		RedisKeyPrefix:     strings.TrimSpace(os.Getenv("REDIS_KEY_PREFIX")),
 		CORSOrigins:        parseAllowlist(os.Getenv("CORS_ORIGINS"), []string{"http://127.0.0.1:8099", "http://localhost:5173"}),
 		AuthSecret:         authSecret,
 		GoogleClientID:     strings.TrimSpace(os.Getenv("GOOGLE_CLIENT_ID")),
@@ -59,6 +63,8 @@ func Load() (*Config, error) {
 		TerminalAdminKey:   strings.TrimSpace(firstNonEmpty(os.Getenv("TERMINAL_ADMIN_KEY"), os.Getenv("ADMIN_API_KEY"))),
 		FeatureFlagsPath:   getEnvOr("FEATURE_FLAGS_PATH", "/root/SMtracker/config/feature_flags.yaml"),
 		SMtrackerDir:       getEnvOr("SMTRACKER_DIR", "/root/SMtracker"),
+		CloudflareAPIToken: strings.TrimSpace(os.Getenv("CLOUDFLARE_API_TOKEN")),
+		CloudflareZoneID:   strings.TrimSpace(os.Getenv("CLOUDFLARE_ZONE_ID")),
 	}
 	return cfg, nil
 }

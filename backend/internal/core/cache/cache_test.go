@@ -46,3 +46,17 @@ func TestIsProtectedKey(t *testing.T) {
 		}
 	}
 }
+
+func TestStoreKeyPrefixAndNilSafety(t *testing.T) {
+	s := &Store{l1: NewMemoryLRU(8), prefix: "lt_parity:"}
+	if got := s.key("bandar:BBCA"); got != "lt_parity:bandar:BBCA" {
+		t.Fatalf("unexpected prefixed key: %q", got)
+	}
+	if got := IsProtectedKey("rate_limit:data:127.0.0.1"); !got {
+		t.Fatalf("expected protected key check to return true")
+	}
+	var nilStore *Store
+	if _, ok := nilStore.Get(t.Context(), "k"); ok {
+		t.Fatalf("expected nil store Get to miss")
+	}
+}

@@ -27,7 +27,7 @@
 | `investowl/health` | InvestOwl + Avenium | ✅ DONE | `compare_json.py` PASS |
 | `investowl/users` (9 endpoints + auth-gate) | InvestOwl `routers/auth.py` | ✅ DONE | `auth-gate` parity PASS |
 | `terminal/portal` (tanpa `bei1persen`) | Avenium `routers/portal.py` | ✅ DONE | Unit test + curl no-bei1persen PASS |
-| `investowl/stocks`, `broker`, `system` | InvestOwl | ⬜ TODO | — |
+| `investowl/stocks`, `broker`, `system` (16 endpoints + `shared/*`) | InvestOwl | ✅ DONE | 100% JSON parity vs `:8001` (6/6 read endpoints) + `/api/logs/*` auth & dry-run smoke PASS; `system_test.go` PASS |
 | `investowl/bandarmology`, `signal`, `foreign_flow`, `forensic` | InvestOwl | ⬜ TODO | — |
 | `investowl/ownership`, `shareholders`, `nyangkut` | InvestOwl | ⬜ TODO | — |
 | `terminal/mmd`, `foreign_flow_pro`, `konglo`, `ipo_hunter`, `market_report` | Avenium | ⬜ TODO | — |
