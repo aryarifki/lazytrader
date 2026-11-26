@@ -29,6 +29,22 @@ func UserFromContext(ctx context.Context) (*SessionUser, bool) {
 	return u, ok && u != nil
 }
 
+// IsAdminSession checks whether the request has a valid InvestOwl admin session cookie.
+func (g *Guard) IsAdminSession(r *http.Request) (isAdmin bool, hasCookie bool) {
+	if g == nil {
+		return false, false
+	}
+	cookie, err := r.Cookie(SessionCookieName)
+	if err != nil || cookie.Value == "" {
+		return false, false
+	}
+	user, status, _ := g.extractUser(r)
+	if user == nil || status != http.StatusOK {
+		return false, true
+	}
+	return user.Role == "admin" || IsAdminEmail(user.Email, g.AdminEmails), true
+}
+
 func (g *Guard) extractUser(r *http.Request) (*SessionUser, int, string) {
 	cookie, err := r.Cookie(SessionCookieName)
 	if err != nil || cookie.Value == "" {

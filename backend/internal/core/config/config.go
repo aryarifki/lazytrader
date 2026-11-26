@@ -29,6 +29,8 @@ type Config struct {
 	TerminalAdminKey   string
 	FeatureFlagsPath   string
 	SMtrackerDir       string
+	MarketReportDir    string
+	MarketReportScript string
 	CloudflareAPIToken string
 	CloudflareZoneID   string
 }
@@ -63,6 +65,8 @@ func Load() (*Config, error) {
 		TerminalAdminKey:   strings.TrimSpace(firstNonEmpty(os.Getenv("TERMINAL_ADMIN_KEY"), os.Getenv("ADMIN_API_KEY"))),
 		FeatureFlagsPath:   getEnvOr("FEATURE_FLAGS_PATH", "/root/SMtracker/config/feature_flags.yaml"),
 		SMtrackerDir:       getEnvOr("SMTRACKER_DIR", "/root/SMtracker"),
+		MarketReportDir:    getEnvOr("MARKET_REPORT_DIR", "/root/rev/reports"),
+		MarketReportScript: getEnvOr("MARKET_REPORT_SCRIPT", "/root/rev/tools/generate_universe_report.py"),
 		CloudflareAPIToken: strings.TrimSpace(os.Getenv("CLOUDFLARE_API_TOKEN")),
 		CloudflareZoneID:   strings.TrimSpace(os.Getenv("CLOUDFLARE_ZONE_ID")),
 	}
