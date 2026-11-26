@@ -2,29 +2,63 @@ import type { StockOwnership } from "@/features/ownership/stock/stockTypes";
 
 const API_BASE = "/api/v1/terminal";
 
-async function terminalGet<T = unknown>(path: string): Promise<T> {
+async function terminalGet<T = unknown>(
+  path: string,
+  extraHeaders?: Record<string, string>
+): Promise<T> {
   const res = await fetch(`${API_BASE}${path}`, {
     credentials: "include",
+    headers: extraHeaders,
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({ detail: res.statusText }));
-    throw new Error(err.detail || `API error ${res.status}: ${res.statusText}`);
+    throw new Error(err.detail || err.message || `API error ${res.status}: ${res.statusText}`);
   }
   return res.json();
 }
 
-async function terminalPost<T = unknown>(path: string, body: unknown): Promise<T> {
+async function terminalPost<T = unknown>(
+  path: string,
+  body: unknown,
+  extraHeaders?: Record<string, string>
+): Promise<T> {
   const res = await fetch(`${API_BASE}${path}`, {
     method: "POST",
     credentials: "include",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...extraHeaders },
     body: JSON.stringify(body),
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({ detail: res.statusText }));
-    throw new Error(err.detail || `API error ${res.status}: ${res.statusText}`);
+    throw new Error(err.detail || err.message || `API error ${res.status}: ${res.statusText}`);
   }
   return res.json();
+}
+
+export function getAdminKey(): string {
+  if (typeof window !== "undefined") {
+    return localStorage.getItem("terminal_admin_key") || "";
+  }
+  return "";
+}
+
+export function setAdminKey(key: string): void {
+  if (typeof window !== "undefined") {
+    if (key && key.trim()) {
+      localStorage.setItem("terminal_admin_key", key.trim());
+    } else {
+      localStorage.removeItem("terminal_admin_key");
+    }
+  }
+}
+
+function getAdminHeaders(): Record<string, string> {
+  const key = getAdminKey();
+  const headers: Record<string, string> = {};
+  if (key) {
+    headers["X-Admin-Key"] = key;
+  }
+  return headers;
 }
 
 export async function getMmdTickers<T = any>(): Promise<T> {
@@ -154,4 +188,92 @@ export async function getStockOwnershipProfile(ticker: string): Promise<StockOwn
   } catch {
     return null;
   }
+}
+
+export async function getForeignFlowScreener<T = any>(
+  universe = "ff",
+  window = 40,
+  fpBadge?: string,
+  transBucket?: string,
+  badge?: string,
+  limit = 200
+): Promise<T> {
+  const params = new URLSearchParams();
+  params.append("universe", universe);
+  params.append("window", String(window));
+  if (fpBadge) params.append("fp_badge", fpBadge);
+  if (transBucket) params.append("trans_bucket", transBucket);
+  if (badge) params.append("badge", badge);
+  params.append("limit", String(limit));
+  return terminalGet<T>(`/foreign-flow/screener?${params.toString()}`);
+}
+
+export async function getForeignFlowSeries<T = any>(ticker: string, limit = 250): Promise<T> {
+  return terminalGet<T>(`/foreign-flow/series/${encodeURIComponent(ticker)}?limit=${limit}`);
+}
+
+export async function getForeignFlowIhsg<T = any>(): Promise<T> {
+  return terminalGet<T>("/foreign-flow/ihsg");
+}
+
+export async function getKongloReport<T = any>(): Promise<T> {
+  return terminalGet<T>("/konglo/report");
+}
+
+export async function getKongloGroups<T = any>(): Promise<T> {
+  return terminalGet<T>("/konglo/groups");
+}
+
+export async function getKongloSummary<T = any>(group?: string, limit = 200): Promise<T> {
+  const params = new URLSearchParams();
+  if (group) params.append("group", group);
+  params.append("limit", String(limit));
+  return terminalGet<T>(`/konglo/summary?${params.toString()}`);
+}
+
+export async function getKongloGroupDetail<T = any>(groupName: string): Promise<T> {
+  return terminalGet<T>(`/konglo/group/${encodeURIComponent(groupName)}`);
+}
+
+export async function getMarketReportStatus<T = any>(): Promise<T> {
+  return terminalGet<T>("/market-report/status", getAdminHeaders());
+}
+
+export async function triggerGenerateMarketReport<T = any>(
+  session = 1,
+  rateLimit = 180.0,
+  workers = 8
+): Promise<T> {
+  return terminalPost<T>(
+    "/market-report/generate",
+    { session, rate_limit: rateLimit, workers },
+    getAdminHeaders()
+  );
+}
+
+export async function getMarketReportHistory<T = any>(): Promise<T> {
+  return terminalGet<T>("/market-report/history", getAdminHeaders());
+}
+
+export async function getMarketReportDetail<T = any>(filename: string): Promise<T> {
+  return terminalGet<T>(
+    `/market-report/detail?filename=${encodeURIComponent(filename)}`,
+    getAdminHeaders()
+  );
+}
+
+export async function updateStockbitToken<T = any>(token: string): Promise<T> {
+  return terminalPost<T>("/market-report/update-token", { token }, getAdminHeaders());
+}
+
+export async function triggerSmtrackerAutoRenew<T = any>(): Promise<T> {
+  return terminalPost<T>("/market-report/auto-renew", {}, getAdminHeaders());
+}
+
+export async function getMarketReportLogs<T = any>(): Promise<T> {
+  return terminalGet<T>("/market-report/logs", getAdminHeaders());
+}
+
+export async function resetMarketReportStatus<T = any>(): Promise<T> {
+  return terminalPost<T>("/market-report/reset-status", {}, getAdminHeaders());
 }

@@ -3,11 +3,11 @@ import { BrowserRouter, Navigate, Route, Routes, useLocation } from "react-route
 import useSWR from "swr";
 import { AuthProvider, useSession } from "@/lib/auth";
 import ClientLayout from "@/components/layout/ClientLayout";
-import FeaturePlaceholder from "@/components/ui/FeaturePlaceholder";
 
 const LoginPage = lazy(() => import("@/features/auth/LoginPage"));
 const PendingPage = lazy(() => import("@/features/auth/PendingPage"));
 const AdminPage = lazy(() => import("@/features/admin/AdminPage"));
+const MarketReportPage = lazy(() => import("@/features/market-report/MarketReportPage"));
 const HomePage = lazy(() => import("@/features/home/HomePage"));
 const TickerPage = lazy(() => import("@/features/ticker/TickerPage"));
 const SignalPage = lazy(() => import("@/features/signal/SignalPage"));
@@ -17,6 +17,8 @@ const GroupPage = lazy(() => import("@/features/group/GroupPage"));
 const ExplorerPage = lazy(() => import("@/features/explorer/ExplorerPage"));
 const MmdPage = lazy(() => import("@/features/mmd/MmdPage"));
 const IpoHunterPage = lazy(() => import("@/features/ipo-hunter/IpoHunterPage"));
+const ForeignProPage = lazy(() => import("@/features/foreign-pro/ForeignProPage"));
+const KongloPage = lazy(() => import("@/features/konglo/KongloPage"));
 
 const PROTECTED_PREFIXES = [
   "/signal",
@@ -91,7 +93,7 @@ export default function App() {
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/pending" element={<PendingPage />} />
                 <Route path="/admin" element={<AdminPage />} />
-                <Route path="/admin/market-report" element={<FeaturePlaceholder title="Market Report Generator Admin" phase="Fase 4" />} />
+                <Route path="/admin/market-report" element={<MarketReportPage />} />
                 <Route path="/signal" element={<SignalPage />} />
                 <Route path="/backtest" element={<Navigate to="/signal?tab=backtest" replace />} />
                 <Route path="/foreign" element={<ForeignPage />} />
@@ -100,8 +102,8 @@ export default function App() {
                 <Route path="/explorer" element={<ExplorerPage />} />
                 <Route path="/mmd" element={<MmdPage />} />
                 <Route path="/ipo-hunter" element={<IpoHunterPage />} />
-                <Route path="/foreign-pro" element={<FeaturePlaceholder title="Foreign Flow Pro" phase="Fase 4" />} />
-                <Route path="/konglo" element={<FeaturePlaceholder title="Konglo Screener" phase="Fase 4" />} />
+                <Route path="/foreign-pro" element={<ForeignProPage />} />
+                <Route path="/konglo" element={<KongloPage />} />
                 <Route path="/:ticker" element={<TickerPage />} />
               </Routes>
             </RouteGuard>
