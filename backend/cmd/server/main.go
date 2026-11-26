@@ -22,6 +22,8 @@ import (
 	"github.com/aryarifki/lazytrader/backend/internal/domains/investowl/foreign_flow"
 	"github.com/aryarifki/lazytrader/backend/internal/domains/investowl/forensic"
 	"github.com/aryarifki/lazytrader/backend/internal/domains/investowl/health"
+	"github.com/aryarifki/lazytrader/backend/internal/domains/investowl/nyangkut"
+	"github.com/aryarifki/lazytrader/backend/internal/domains/investowl/shareholders"
 	signalsvc "github.com/aryarifki/lazytrader/backend/internal/domains/investowl/signal"
 	"github.com/aryarifki/lazytrader/backend/internal/domains/investowl/stocks"
 	"github.com/aryarifki/lazytrader/backend/internal/domains/investowl/system"
@@ -78,12 +80,15 @@ func main() {
 	r.Mount("/api/forensic", forensic.Routes(forensicSvc))
 	r.Mount("/api/foreign-flow", foreign_flow.Routes(dbPool, invCache, forensicSvc))
 	r.Mount("/api/signal", signalsvc.Routes(dbPool, invCache, flagStore))
-	r.Mount("/api/bandar", bandarmology.Routes(bandarmology.Deps{
+	bandarRouter := bandarmology.Routes(bandarmology.Deps{
 		DB:       dbPool,
 		Cache:    invCache,
 		Guard:    guard,
 		CFZoneID: cfg.CloudflareZoneID,
-	}))
+	})
+	bandarRouter.Mount("/shareholders", shareholders.Routes(dbPool, invCache))
+	r.Mount("/api/bandar", bandarRouter)
+	nyangkut.Mount(r, dbPool, invCache)
 	r.Mount("/api/logs", system.Routes(system.Deps{
 		DB:           dbPool,
 		Cache:        invCache,
