@@ -1,0 +1,20 @@
+# Environment & Secrets
+.env
+.env.*
+!.env.example
+
+# Build & Binaries
+backend/bin/
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+
+# Test & Coverage
+*.out
+coverage.out
+.pytest_cache/
+__pycache__/
+
+# Logs & OS
+*.log
+.DS_Store
