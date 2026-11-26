@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#F9EDE1" />
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#141210" />
+    <meta name="description" content="Dashboard Bandarmologi & Analitik Kuantitatif IDX" />
+    <title>InvestOwl Terminal</title>
+    <link rel="icon" href="/logo-v2.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon-v2.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <script>
+      (function () {
+        try {
+          var local = localStorage.getItem("investowl-global-state");
+          var theme = "dark";
+          if (local) {
+            var parsed = JSON.parse(local);
+            if (parsed.state && parsed.state.theme) {
+              theme = parsed.state.theme;
+            }
+          }
+          document.documentElement.setAttribute("data-theme", theme);
+          if (theme === "dark") {
+            document.documentElement.classList.add("dark");
+          }
+        } catch (e) {}
+      })();
+    </script>
+  </head>
+  <body class="bg-[var(--md-sys-color-surface)] text-[var(--md-sys-color-on-surface)] antialiased transition-colors duration-300" style="font-family: 'Inter', system-ui, -apple-system, sans-serif;">
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

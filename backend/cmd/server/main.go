@@ -1,0 +1,98 @@
+package main
+
+import (
+	"context"
+	"fmt"
+	"log"
+	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
+
+	"github.com/aryarifki/lazytrader/backend/internal/core/auth"
+	"github.com/aryarifki/lazytrader/backend/internal/core/cache"
+	"github.com/aryarifki/lazytrader/backend/internal/core/config"
+	"github.com/aryarifki/lazytrader/backend/internal/core/database"
+	"github.com/aryarifki/lazytrader/backend/internal/core/flags"
+	"github.com/aryarifki/lazytrader/backend/internal/core/middleware"
+	"github.com/aryarifki/lazytrader/backend/internal/core/spa"
+	"github.com/aryarifki/lazytrader/backend/internal/domains/investowl/health"
+	"github.com/aryarifki/lazytrader/backend/internal/domains/investowl/users"
+	"github.com/aryarifki/lazytrader/backend/internal/domains/terminal/portal"
+	"github.com/go-chi/chi/v5"
+	chimw "github.com/go-chi/chi/v5/middleware"
+)
+
+func main() {
+	cfg, err := config.Load()
+	if err != nil {
+		log.Fatalf("[LazyTrader] config error: %v", err)
+	}
+
+	ctx := context.Background()
+	dbPool, err := database.NewPool(ctx, cfg.DatabaseURL)
+	if err != nil {
+		log.Fatalf("[LazyTrader] postgres error: %v", err)
+	}
+	defer dbPool.Close()
+
+	invCache := cache.NewStore(cfg.RedisHost, cfg.RedisPort, cfg.RedisDBInvestowl, 256)
+	defer invCache.Close()
+	termCache := cache.NewStore(cfg.RedisHost, cfg.RedisPort, cfg.RedisDBTerminal, 256)
+	defer termCache.Close()
+
+	_ = flags.NewStore(cfg.FeatureFlagsPath)
+
+	userRepo := &users.Repository{DB: dbPool, AdminEmails: cfg.AdminEmails}
+	guard := &auth.Guard{Secret: cfg.AuthSecret, AdminEmails: cfg.AdminEmails, Users: userRepo}
+	oauthHandler := auth.NewOAuthHandler(guard, cfg.GoogleClientID, cfg.GoogleClientSecret, cfg.AppBaseURL)
+	usersHandler := &users.Handler{Repo: userRepo, Redis: invCache.Redis(), AdminEmails: cfg.AdminEmails}
+	healthHandler := &health.Handler{DB: dbPool}
+
+	r := chi.NewRouter()
+	r.Use(chimw.Recoverer)
+	r.Use(middleware.SecurityHeaders)
+	r.Use(middleware.CORS(cfg.CORSOrigins))
+	r.Use(middleware.Gzip)
+	r.Use(middleware.RateLimit(invCache.Redis()))
+
+	// InvestOwl Core & Auth APIs
+	r.Get("/api/health", healthHandler.InvestowlHealth)
+	r.Mount("/api/auth", oauthHandler.Routes())
+	r.Mount("/api/users", users.Routes(usersHandler, guard))
+
+	// Avenium Terminal APIs (no bei1persen)
+	r.Route("/api/v1/terminal", func(tr chi.Router) {
+		tr.Get("/health", healthHandler.TerminalHealth)
+		tr.Mount("/portal", portal.Routes())
+	})
+
+	// Static Vite SPA + Legacy Redirects
+	r.Handle("/*", spa.Handler(cfg.StaticDistDir))
+
+	addr := fmt.Sprintf("%s:%d", cfg.Host, cfg.Port)
+	srv := &http.Server{
+		Addr:              addr,
+		Handler:           r,
+		ReadHeaderTimeout: 10 * time.Second,
+		WriteTimeout:      60 * time.Second,
+		IdleTimeout:       120 * time.Second,
+	}
+
+	go func() {
+		log.Printf("[LazyTrader] Listening on http://%s (static=%s)", addr, cfg.StaticDistDir)
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatalf("[LazyTrader] server error: %v", err)
+		}
+	}()
+
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
+
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	_ = srv.Shutdown(shutdownCtx)
+	log.Println("[LazyTrader] Shutdown complete.")
+}
