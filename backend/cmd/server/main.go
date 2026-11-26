@@ -97,18 +97,20 @@ func main() {
 	nyangkut.Mount(r, dbPool, invCache)
 	r.Mount("/api/v1/ownership", ownership.Routes(dbPool, invCache))
 	r.Mount("/api/logs", system.Routes(system.Deps{
-		DB:           dbPool,
-		Cache:        invCache,
-		Guard:        guard,
-		SMtrackerDir: cfg.SMtrackerDir,
-		Host:         cfg.Host,
-		Port:         cfg.Port,
-		CFZoneID:     cfg.CloudflareZoneID,
+		DB:            dbPool,
+		Cache:         invCache,
+		TerminalCache: termCache,
+		Guard:         guard,
+		SMtrackerDir:  cfg.SMtrackerDir,
+		Host:          cfg.Host,
+		Port:          cfg.Port,
+		CFZoneID:      cfg.CloudflareZoneID,
 	}))
 
 	// Avenium Terminal APIs (no bei1persen)
 	r.Route("/api/v1/terminal", func(tr chi.Router) {
 		tr.Get("/health", healthHandler.TerminalHealth)
+		tr.Post("/cache/refresh", system.NewTerminalCacheRefreshHandler(termCache))
 		tr.Mount("/portal", portal.Routes())
 		tr.Mount("/foreign-flow", foreign_flow_pro.Routes(dbPool, termCache))
 		tr.Mount("/konglo", konglo.Routes(dbPool, termCache))

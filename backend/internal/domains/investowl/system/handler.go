@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -19,12 +20,13 @@ import (
 
 // Handler serves /api/logs endpoints.
 type Handler struct {
-	Manager  *JobManager
-	Cache    *cache.Store
-	DB       *pgxpool.Pool
-	Host     string
-	Port     int
-	CFZoneID string
+	Manager       *JobManager
+	Cache         *cache.Store
+	TerminalCache *cache.Store
+	DB            *pgxpool.Pool
+	Host          string
+	Port          int
+	CFZoneID      string
 }
 
 // GetDailyLogs handles GET /api/logs/daily.
@@ -287,18 +289,59 @@ func (h *Handler) PurgeCache(w http.ResponseWriter, r *http.Request) {
 	}
 
 	deleted := h.Cache.SafePurge(r.Context(), pattern)
+	termDeleted := 0
+	if h.TerminalCache != nil {
+		termDeleted = h.TerminalCache.SafePurge(r.Context(), pattern)
+	}
 	var cfRes map[string]any
 	if purgeCF {
 		cfRes = cache.PurgeCloudflare(r.Context(), h.CFZoneID, nil, true)
 	}
 
 	httpx.WriteJSON(w, http.StatusOK, map[string]any{
-		"status":       "success",
-		"deleted_keys": deleted,
-		"pattern":      pattern,
-		"cloudflare":   cfRes,
-		"message":      "Universal cache purged successfully across Memory L1, Redis L2, and Cloudflare CDN.",
+		"status":                "success",
+		"deleted_keys":          deleted + termDeleted,
+		"terminal_deleted_keys": termDeleted,
+		"pattern":               pattern,
+		"cloudflare":            cfRes,
+		"message":               "Universal cache purged successfully across Memory L1, Redis L2, and Cloudflare CDN.",
 	})
+}
+
+func isDirectLoopbackRequest(r *http.Request) bool {
+	if r.Header.Get("CF-Connecting-IP") != "" || r.Header.Get("X-Forwarded-For") != "" {
+		return false
+	}
+	host, _, err := net.SplitHostPort(r.RemoteAddr)
+	if err != nil {
+		host = strings.TrimSpace(r.RemoteAddr)
+	}
+	host = strings.Trim(host, "[]")
+	ip := net.ParseIP(host)
+	return ip != nil && ip.IsLoopback()
+}
+
+// RefreshTerminalCache handles POST /api/v1/terminal/cache/refresh from direct loopback callers.
+func (h *Handler) RefreshTerminalCache(w http.ResponseWriter, r *http.Request) {
+	httpx.SetNoStore(w)
+	if !isDirectLoopbackRequest(r) {
+		httpx.WriteError(w, http.StatusForbidden, "Forbidden: loopback only")
+		return
+	}
+	cleared := 0
+	if h.TerminalCache != nil {
+		cleared = h.TerminalCache.SafePurge(r.Context(), "*")
+	}
+	httpx.WriteJSON(w, http.StatusOK, map[string]any{
+		"status":       "ok",
+		"cleared_keys": cleared,
+	})
+}
+
+// NewTerminalCacheRefreshHandler returns an HTTP handler that safely purges TerminalCache for loopback callers.
+func NewTerminalCacheRefreshHandler(termCache *cache.Store) http.HandlerFunc {
+	h := &Handler{TerminalCache: termCache}
+	return h.RefreshTerminalCache
 }
 
 // WarmupCache handles POST /api/logs/cache/warmup.

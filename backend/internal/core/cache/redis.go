@@ -39,6 +39,11 @@ func NewStore(host string, port, db, l1MaxSize int) *Store {
 	return NewStoreWithPrefix(host, port, db, l1MaxSize, "")
 }
 
+// NewMemoryOnlyStore initializes an L1-only Store without connecting to Redis (useful in unit tests).
+func NewMemoryOnlyStore(l1MaxSize int) *Store {
+	return &Store{l1: NewMemoryLRU(l1MaxSize)}
+}
+
 // NewStoreWithPrefix initializes a Store with an optional Redis key namespace prefix.
 func NewStoreWithPrefix(host string, port, db, l1MaxSize int, prefix string) *Store {
 	l1 := NewMemoryLRU(l1MaxSize)

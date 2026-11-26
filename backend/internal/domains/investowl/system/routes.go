@@ -9,24 +9,26 @@ import (
 
 // Deps groups dependencies for /api/logs routes.
 type Deps struct {
-	DB           *pgxpool.Pool
-	Cache        *cache.Store
-	Guard        *auth.Guard
-	SMtrackerDir string
-	Host         string
-	Port         int
-	CFZoneID     string
+	DB            *pgxpool.Pool
+	Cache         *cache.Store
+	TerminalCache *cache.Store
+	Guard         *auth.Guard
+	SMtrackerDir  string
+	Host          string
+	Port          int
+	CFZoneID      string
 }
 
 // Routes mounts /api/logs endpoints matching InvestOwl routers/system.py auth gates.
 func Routes(d Deps) chi.Router {
 	h := &Handler{
-		Manager:  NewJobManager(d.SMtrackerDir),
-		Cache:    d.Cache,
-		DB:       d.DB,
-		Host:     d.Host,
-		Port:     d.Port,
-		CFZoneID: d.CFZoneID,
+		Manager:       NewJobManager(d.SMtrackerDir),
+		Cache:         d.Cache,
+		TerminalCache: d.TerminalCache,
+		DB:            d.DB,
+		Host:          d.Host,
+		Port:          d.Port,
+		CFZoneID:      d.CFZoneID,
 	}
 
 	r := chi.NewRouter()
