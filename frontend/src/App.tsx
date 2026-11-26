@@ -11,6 +11,10 @@ const AdminPage = lazy(() => import("@/features/admin/AdminPage"));
 const HomePage = lazy(() => import("@/features/home/HomePage"));
 const TickerPage = lazy(() => import("@/features/ticker/TickerPage"));
 const SignalPage = lazy(() => import("@/features/signal/SignalPage"));
+const ForeignPage = lazy(() => import("@/features/foreign/ForeignPage"));
+const OwnershipPage = lazy(() => import("@/features/ownership/OwnershipPage"));
+const GroupPage = lazy(() => import("@/features/group/GroupPage"));
+const ExplorerPage = lazy(() => import("@/features/explorer/ExplorerPage"));
 
 const PROTECTED_PREFIXES = [
   "/signal",
@@ -88,10 +92,10 @@ export default function App() {
                 <Route path="/admin/market-report" element={<FeaturePlaceholder title="Market Report Generator Admin" phase="Fase 4" />} />
                 <Route path="/signal" element={<SignalPage />} />
                 <Route path="/backtest" element={<Navigate to="/signal?tab=backtest" replace />} />
-                <Route path="/foreign" element={<FeaturePlaceholder title="Foreign Flow & Sector Rotation" phase="Fase 4" />} />
-                <Route path="/ownership" element={<FeaturePlaceholder title="Ownership Intelligence" phase="Fase 4" />} />
-                <Route path="/group" element={<FeaturePlaceholder title="Konglomerasi & Jejaring" phase="Fase 4" />} />
-                <Route path="/explorer" element={<FeaturePlaceholder title="Ownership Explorer" phase="Fase 4" />} />
+                <Route path="/foreign" element={<ForeignPage />} />
+                <Route path="/ownership" element={<OwnershipPage />} />
+                <Route path="/group" element={<GroupPage />} />
+                <Route path="/explorer" element={<ExplorerPage />} />
                 <Route path="/mmd" element={<FeaturePlaceholder title="MM Detector Pro" phase="Fase 4" />} />
                 <Route path="/ipo-hunter" element={<FeaturePlaceholder title="IPO Hunter Pro" phase="Fase 4" />} />
                 <Route path="/foreign-pro" element={<FeaturePlaceholder title="Foreign Flow Pro" phase="Fase 4" />} />
