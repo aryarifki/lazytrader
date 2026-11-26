@@ -245,3 +245,130 @@ func GetConglomerateGroup(ctx context.Context, db *pgxpool.Pool, groupID string)
 	}
 	return nil, false
 }
+
+var staticConglomerateGroupsPreset = []ConglomerateGroup{
+	{
+		ID:           "barito",
+		Name:         "Barito Pacific / Prajogo Pangestu",
+		Description:  "Konglomerasi petrokimia, energi baru terbarukan, dan tambang.",
+		HubEntity:    "Prajogo Pangestu",
+		KnownTickers: []string{"BREN", "BRPT", "CDIA", "CUAN", "STRK", "TPIA"},
+		TickerCount:  6,
+		Source:       "conglomerate_static",
+	},
+	{
+		ID:           "salim",
+		Name:         "Salim Group / Anthoni Salim",
+		Description:  "Konglomerasi konsumen primer, agribisnis, ritel, data center, dan infrastruktur.",
+		HubEntity:    "Anthoni Salim",
+		KnownTickers: []string{"INDF", "ICBP", "SIMP", "LSIP", "DNET", "DCII", "EMTK", "FAST", "MEDC"},
+		TickerCount:  9,
+		Source:       "conglomerate_static",
+	},
+	{
+		ID:           "astra",
+		Name:         "Astra International Group",
+		Description:  "Grup otomotif, alat berat, agribisnis, dan jasa keuangan terbesar Indonesia.",
+		HubEntity:    "PT Astra International Tbk",
+		KnownTickers: []string{"ASII", "AALI", "ASGR", "AUTO", "UNTR", "HEAL"},
+		TickerCount:  6,
+		Source:       "conglomerate_static",
+	},
+	{
+		ID:           "djarum",
+		Name:         "Djarum / Hartono Brothers",
+		Description:  "Konglomerasi perbankan swasta terbesar, menara telekomunikasi, dan e-commerce.",
+		HubEntity:    "Robert Budi Hartono & Michael Hartono",
+		KnownTickers: []string{"BBCA", "TOWR", "SUPR", "RANC", "BELI"},
+		TickerCount:  5,
+		Source:       "conglomerate_static",
+	},
+	{
+		ID:           "sinarmas",
+		Name:         "Sinar Mas / Widjaja Family",
+		Description:  "Konglomerasi pulp & paper, agribisnis, energi, jasa keuangan, dan properti.",
+		HubEntity:    "Sinar Mas / Widjaja Family",
+		KnownTickers: []string{"DSSA", "GEMS", "BSIM", "LIFE", "SMMA", "INKP", "TKIM", "BSDE"},
+		TickerCount:  8,
+		Source:       "conglomerate_static",
+	},
+	{
+		ID:           "adaro",
+		Name:         "Adaro Energy / Boy Thohir",
+		Description:  "Konglomerasi energi batubara, green power, kimia, dan investasi pertambangan.",
+		HubEntity:    "Garibaldi Thohir",
+		KnownTickers: []string{"ADRO", "AADI", "MDKA", "ESSA", "PALM", "TRIM"},
+		TickerCount:  6,
+		Source:       "conglomerate_static",
+	},
+	{
+		ID:           "lippo",
+		Name:         "Lippo Group / Mochtar Riady",
+		Description:  "Konglomerasi properti, rumah sakit, ritel modern, dan telekomunikasi.",
+		HubEntity:    "PT Inti Anugerah Pratama (Riady Family)",
+		KnownTickers: []string{"LPKR", "MLPL", "LPPS", "LPGI", "LPLI", "SILO"},
+		TickerCount:  6,
+		Source:       "conglomerate_static",
+	},
+	{
+		ID:           "mnc",
+		Name:         "MNC Group / Hary Tanoesoedibjo",
+		Description:  "Konglomerasi media terintegrasi, hospitality/resort, dan jasa keuangan.",
+		HubEntity:    "Hary Tanoesoedibjo",
+		KnownTickers: []string{"BMTR", "MNCN", "BCAP", "BABP", "KPIG", "MSKY"},
+		TickerCount:  6,
+		Source:       "conglomerate_static",
+	},
+	{
+		ID:           "bakrie",
+		Name:         "Bakrie Group",
+		Description:  "Konglomerasi sumber daya alam, energi, infrastruktur, EV, dan media.",
+		HubEntity:    "Bakrie & Brothers",
+		KnownTickers: []string{"BNBR", "BRMS", "ENRG", "VKTR", "VIVA", "BTEL", "ALII", "UNSP"},
+		TickerCount:  8,
+		Source:       "conglomerate_static",
+	},
+	{
+		ID:           "harita",
+		Name:         "Harita Group / Lim Family",
+		Description:  "Konglomerasi pertambangan nikel terintegrasi, smelter HPAL, dan bauksit.",
+		HubEntity:    "PT Harita Jayaraya",
+		KnownTickers: []string{"NCKL", "CITA"},
+		TickerCount:  2,
+		Source:       "conglomerate_static",
+	},
+	{
+		ID:           "medco",
+		Name:         "Medco Energi / Panigoro Family",
+		Description:  "Konglomerasi migas, tambang tembaga-emas, dan pembangkit listrik.",
+		HubEntity:    "Hilmi Panigoro / Medco Daya",
+		KnownTickers: []string{"MEDC", "AMMN"},
+		TickerCount:  2,
+		Source:       "conglomerate_static",
+	},
+	{
+		ID:           "emtek",
+		Name:         "Elang Mahkota Teknologi (Emtek)",
+		Description:  "Konglomerasi media siaran, teknologi digital, dan jaringan layanan kesehatan.",
+		HubEntity:    "Eddy Kusnadi Sariaatmadja",
+		KnownTickers: []string{"EMTK", "SCMA", "BUKA", "SAME"},
+		TickerCount:  4,
+		Source:       "conglomerate_static",
+	},
+}
+
+// StaticConglomerateGroups returns the 12 preset CONGLOMERATE_GROUPS fallback in deterministic order.
+func StaticConglomerateGroups() ([]ConglomerateGroup, map[string]ConglomerateGroup) {
+	ordered := make([]ConglomerateGroup, len(staticConglomerateGroupsPreset))
+	byID := make(map[string]ConglomerateGroup, len(staticConglomerateGroupsPreset))
+	for i, g := range staticConglomerateGroupsPreset {
+		tickers := make([]string, len(g.KnownTickers))
+		copy(tickers, g.KnownTickers)
+		gCopy := g
+		gCopy.KnownTickers = tickers
+		gCopy.GroupName = g.Name
+		ordered[i] = gCopy
+		byID[g.ID] = gCopy
+	}
+	return ordered, byID
+}

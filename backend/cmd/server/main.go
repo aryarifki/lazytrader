@@ -23,6 +23,7 @@ import (
 	"github.com/aryarifki/lazytrader/backend/internal/domains/investowl/forensic"
 	"github.com/aryarifki/lazytrader/backend/internal/domains/investowl/health"
 	"github.com/aryarifki/lazytrader/backend/internal/domains/investowl/nyangkut"
+	"github.com/aryarifki/lazytrader/backend/internal/domains/investowl/ownership"
 	"github.com/aryarifki/lazytrader/backend/internal/domains/investowl/shareholders"
 	signalsvc "github.com/aryarifki/lazytrader/backend/internal/domains/investowl/signal"
 	"github.com/aryarifki/lazytrader/backend/internal/domains/investowl/stocks"
@@ -89,6 +90,7 @@ func main() {
 	bandarRouter.Mount("/shareholders", shareholders.Routes(dbPool, invCache))
 	r.Mount("/api/bandar", bandarRouter)
 	nyangkut.Mount(r, dbPool, invCache)
+	r.Mount("/api/v1/ownership", ownership.Routes(dbPool, invCache))
 	r.Mount("/api/logs", system.Routes(system.Deps{
 		DB:           dbPool,
 		Cache:        invCache,
