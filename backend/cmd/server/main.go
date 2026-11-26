@@ -18,7 +18,10 @@ import (
 	"github.com/aryarifki/lazytrader/backend/internal/core/middleware"
 	"github.com/aryarifki/lazytrader/backend/internal/core/spa"
 	"github.com/aryarifki/lazytrader/backend/internal/domains/investowl/broker"
+	"github.com/aryarifki/lazytrader/backend/internal/domains/investowl/foreign_flow"
+	"github.com/aryarifki/lazytrader/backend/internal/domains/investowl/forensic"
 	"github.com/aryarifki/lazytrader/backend/internal/domains/investowl/health"
+	signalsvc "github.com/aryarifki/lazytrader/backend/internal/domains/investowl/signal"
 	"github.com/aryarifki/lazytrader/backend/internal/domains/investowl/stocks"
 	"github.com/aryarifki/lazytrader/backend/internal/domains/investowl/system"
 	"github.com/aryarifki/lazytrader/backend/internal/domains/investowl/users"
@@ -45,13 +48,18 @@ func main() {
 	termCache := cache.NewStoreWithPrefix(cfg.RedisHost, cfg.RedisPort, cfg.RedisDBTerminal, 256, cfg.RedisKeyPrefix)
 	defer termCache.Close()
 
-	_ = flags.NewStore(cfg.FeatureFlagsPath)
+	flagStore := flags.NewStore(cfg.FeatureFlagsPath)
 
 	userRepo := &users.Repository{DB: dbPool, AdminEmails: cfg.AdminEmails}
 	guard := &auth.Guard{Secret: cfg.AuthSecret, AdminEmails: cfg.AdminEmails, Users: userRepo}
 	oauthHandler := auth.NewOAuthHandler(guard, cfg.GoogleClientID, cfg.GoogleClientSecret, cfg.AppBaseURL)
 	usersHandler := &users.Handler{Repo: userRepo, Redis: invCache.Redis(), AdminEmails: cfg.AdminEmails}
 	healthHandler := &health.Handler{DB: dbPool}
+	forensicSvc := &forensic.Service{
+		Repo:  &forensic.Repository{DB: dbPool},
+		Cache: invCache,
+		Flags: flagStore,
+	}
 
 	r := chi.NewRouter()
 	r.Use(chimw.Recoverer)
@@ -66,6 +74,9 @@ func main() {
 	r.Mount("/api/users", users.Routes(usersHandler, guard))
 	r.Mount("/api/stocks", stocks.Routes(dbPool))
 	r.Mount("/api/broker-flow", broker.Routes(dbPool))
+	r.Mount("/api/forensic", forensic.Routes(forensicSvc))
+	r.Mount("/api/foreign-flow", foreign_flow.Routes(dbPool, invCache, forensicSvc))
+	r.Mount("/api/signal", signalsvc.Routes(dbPool, invCache, flagStore))
 	r.Mount("/api/logs", system.Routes(system.Deps{
 		DB:           dbPool,
 		Cache:        invCache,
