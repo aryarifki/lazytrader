@@ -17,7 +17,7 @@ import (
 func (h *Handler) pythonExecutable() (pyBin, invDir string) {
 	invDir = strings.TrimSpace(h.InvDir)
 	if invDir == "" {
-		invDir = "/root/investowl/backend"
+		invDir = "/root/SMtracker"
 	}
 	pyBin = strings.TrimSpace(h.PythonBin)
 	if pyBin == "" {
@@ -29,6 +29,10 @@ func (h *Handler) pythonExecutable() (pyBin, invDir string) {
 		}
 	}
 	return pyBin, invDir
+}
+
+func (h *Handler) pythonEnv(invDir string) []string {
+	return append(os.Environ(), "PYTHONPATH="+filepath.Join(invDir, "src")+":"+invDir)
 }
 
 // RunPipeline handles POST /api/bandar/pipeline/run (approved session required).
@@ -43,7 +47,7 @@ func (h *Handler) RunPipeline(w http.ResponseWriter, r *http.Request) {
 		"import sys; from idx_bandarmology import pipeline; pipeline.run(universe_mode=sys.argv[1])",
 		universeMode)
 	cmd.Dir = invDir
-	cmd.Env = append(os.Environ(), "PYTHONPATH="+invDir)
+	cmd.Env = h.pythonEnv(invDir)
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setsid: true}
 	if err := cmd.Start(); err != nil {
 		httpx.WriteError(w, http.StatusInternalServerError, err.Error())
@@ -75,7 +79,7 @@ func (h *Handler) BackfillPipeline(w http.ResponseWriter, r *http.Request) {
 		"import sys; from idx_bandarmology import pipeline; pipeline.backfill_broker_history(tickers=sys.argv[1].split(','), start=sys.argv[2], end=(sys.argv[3] or None))",
 		tickers, start, end)
 	cmd.Dir = invDir
-	cmd.Env = append(os.Environ(), "PYTHONPATH="+invDir)
+	cmd.Env = h.pythonEnv(invDir)
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setsid: true}
 	if err := cmd.Start(); err != nil {
 		httpx.WriteError(w, http.StatusInternalServerError, err.Error())
@@ -96,7 +100,7 @@ func (h *Handler) RefreshUniverse(w http.ResponseWriter, r *http.Request) {
 	cmd := exec.Command(pyBin, "-c",
 		"from idx_bandarmology import universe; print(universe.refresh_master_tickers(force=True))")
 	cmd.Dir = invDir
-	cmd.Env = append(os.Environ(), "PYTHONPATH="+invDir)
+	cmd.Env = h.pythonEnv(invDir)
 	out, err := cmd.Output()
 	if err != nil {
 		httpx.WriteJSON(w, http.StatusOK, map[string]any{

@@ -611,16 +611,16 @@ func (h *Handler) SyncGroupsCatalog(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	invDir := "/root/investowl/backend"
-	pyBin := "/root/investowl/backend/venv/bin/python3"
+	smDir := "/root/SMtracker"
+	pyBin := "/root/SMtracker/venv/bin/python3"
 	if _, err := os.Stat(pyBin); err != nil {
 		pyBin = "python3"
 	}
 	cmd := exec.CommandContext(r.Context(), pyBin, "-c",
-		"import json; from database import SessionLocal; from services.stockbit_catalog import sync_conglomerate_catalogs; db=SessionLocal(); print(json.dumps(sync_conglomerate_catalogs(db))); db.close()",
+		"import json; from sqlalchemy.orm import Session; from idx_bandarmology import storage; from idx_bandarmology.stockbit_catalog import sync_conglomerate_catalogs; db=Session(storage.engine); print(json.dumps(sync_conglomerate_catalogs(db))); db.close()",
 	)
-	cmd.Dir = invDir
-	cmd.Env = append(os.Environ(), "PYTHONPATH="+invDir)
+	cmd.Dir = smDir
+	cmd.Env = append(os.Environ(), "PYTHONPATH="+smDir+"/src:"+smDir)
 	out, err := cmd.Output()
 	if err != nil {
 		httpx.WriteJSON(w, http.StatusOK, map[string]any{

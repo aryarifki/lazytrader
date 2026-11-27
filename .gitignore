@@ -18,3 +18,4 @@ __pycache__/
 # Logs & OS
 *.log
 .DS_Store
+reports/

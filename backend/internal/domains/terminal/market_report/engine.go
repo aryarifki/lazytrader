@@ -37,7 +37,7 @@ type Engine struct {
 func NewEngine(deps Deps) *Engine {
 	reportDir := deps.ReportDir
 	if reportDir == "" {
-		reportDir = "/root/rev/reports"
+		reportDir = "/root/lazytrader/reports"
 	}
 	if _, err := os.Stat(reportDir); os.IsNotExist(err) {
 		_ = os.MkdirAll(reportDir, 0o755)
@@ -49,7 +49,7 @@ func NewEngine(deps Deps) *Engine {
 	}
 	scriptPath := deps.ScriptPath
 	if scriptPath == "" {
-		scriptPath = "/root/rev/tools/generate_universe_report.py"
+		scriptPath = "/root/SMtracker/tools/terminal/generate_universe_report.py"
 	}
 	verifyURL := deps.StockbitVerifyURL
 	if verifyURL == "" {
